@@ -1,0 +1,26 @@
+Package: tidyvader
+Title: Tidyvader: Fast, Clear, and Tidy Rule-Based Sentiment Analysis with VADER
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Christopher",
+           family = "Belanger",
+           role = c("aut", "cre"),
+           email = "christopher.a.belanger@gmail.com",
+           comment = c(ORCID = "https://orcid.org/0000-0003-2070-5721"))
+Description: A fast, clear, and tidy implementation of the rule-based sentiment analysis algorithm VADER (Valence Aware Dictionary and Sentiment Reasoner). It's fast because the code has been re-written from scratch and uses C++ for the core algorithm. It's clear because it tries to make the rule-based algorithm and the dictionaries simple to read so that users can inspect and judge them. And it's tidy because it tries to follow tidy design principles and works well with the %>% pipe.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp,
+    magrittr,
+    dplyr,
+    tibble
+Depends: 
+    R (>= 2.10)
+Suggests: 
+    testthat
