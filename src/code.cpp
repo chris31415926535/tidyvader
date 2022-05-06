@@ -357,13 +357,19 @@ NumericVector get_index3(CharacterVector text, CharacterVector sorted_dictionary
 NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterVector dict_sent_word, NumericVector dict_sent_value, CharacterVector dict_negate, CharacterVector dict_mod_word, NumericVector dict_mod_value, CharacterVector dict_punct_word, NumericVector dict_punct_value){
   std::string text_edit = text;
 
-  // replace each bigram modifier with a unigram "kindof"
+  // at present all bigram modifiers are attenuators. the implementation only looks at single-word tokens, so
+  // replace each bigram modifier with a unigram "kindof".
+  // TODO FIXME: should it replace them with two tokens so the pos/neg/neu scores are the same? e.g. "kind of" -> "the kindof" ?
   // apparently regexes are hard to import to Rcpp so here's a fast, dumb, probably unoptimized linear search function
   int n_bigrams = mod_bigrams.size();
   std::string replacement = "kindof";
   for (int i = 0; i < n_bigrams; ++i){
     text_edit = replace_text(text_edit, std::string(mod_bigrams[i]), "kindof");
   }
+
+  // "least" is a negator UNLESS in bigram constructions "at least" and "very least".
+  // so again do a search/replace for those.
+ // text_edit = replace_text(text_edit, "at least", "kindof");
 
   // split the string into a CharacterVector at spaces
   CharacterVector text_split = str_split_space(text_edit);
@@ -410,7 +416,22 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
     text_split[j] = str;
   }
 
-  /* FIND WORD SCORES */
+
+  /* CONVERT MULTI-WORD TOKENS TO UNIGRAMS */
+  // VADER uses a few multi-word constructions where words differ from their usage alone:
+  // For example, "never"'s meaning differs in "never so good" and "never good".
+  // Since the main loop here works on one-word tokens, here we convert multi-word tokens to single-word tokens.
+  // There is no perfect solution here. My rationale is that it's easier to think of the main VADER algorithm
+  // as a moving-window function over comparable vectors, so then we need to do this preprocessing to get comparable vectors.
+  // NumericVector never_so (text_split_len + 3);
+  // for (int i = 3; i < text_split_len, ++i) {
+  //   if ((text_split[i-2] == "never") & (text_split[i-1] == "so") )
+  //
+  //
+  // }
+  //
+
+   /* FIND WORD SCORES */
 
   // first get the indices
   word_index =  get_index3(text_split, dict_sent_word);
@@ -427,6 +448,22 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
   NumericVector word_negations(text_split_len + 3);
 
   for (int i = 0; i < text_split_len; ++i){
+    // "least" is a negator UNLESS in bigram constructions "at least" and "very least".
+    // so we look for those separately.
+    // TODO FIXME: can we do a search/replace to turn the bigram into a unigram and not have this special case?
+    //             I considered doing it earlier but we might get tripped up if we do it before converting to lower case.
+    if ((text_split[i] == "least") & (i == 0)){
+      word_negations[i+3] = 1;
+      continue;
+    }
+    if ((text_split[i] == "least") & (i > 0)){
+      if ((text_split[i-1] != "at") & (text_split[i-1] != "very")){
+        word_negations[i+3] = 1;
+        continue;
+      }
+    }
+
+    // if we didn't find a "least" construction then look for the rest of the negators
     for (int j = 0; j < dict_negate.length(); ++j) {
       if (dict_negate[j] == text_split[i]){
         word_negations[i+3] = 1;
