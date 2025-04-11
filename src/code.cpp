@@ -24,7 +24,7 @@ CharacterVector remove_punc(CharacterVector text){
     std::string result;
     std::remove_copy_if(text[i].begin(), text[i].end(),
                         std::back_inserter(result), //Store output
-                        std::ptr_fun<int, int>(&std::ispunct)
+                        [](int c){ return std::ispunct(c); }
     );
     out[i] = std::string(result);
   }
@@ -226,7 +226,7 @@ NumericVector vaderC(NumericVector word_scores, NumericVector word_negations, Nu
       sign[i] = (double(0) < word_scores[i]) - (word_scores[i] < double(0));
 
       // do caps: if this word is capitalized for emphasis, adjust it by adding or subtracting the caps differential
-      if (word_caps[i] & (out[i] > 0)) {out[i] += C_INCR;}
+      if (word_caps[i] && (out[i] > 0)) {out[i] += C_INCR;}
 
       // do boosters: look at 3 preceding words. strength decays with each word back: 1, 0.95, 0.9
       // boosters are already adjusted for capitalization.
@@ -425,7 +425,7 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
   // as a moving-window function over comparable vectors, so then we need to do this preprocessing to get comparable vectors.
   // NumericVector never_so (text_split_len + 3);
   // for (int i = 3; i < text_split_len, ++i) {
-  //   if ((text_split[i-2] == "never") & (text_split[i-1] == "so") )
+  //   if ((text_split[i-2] == "never") && (text_split[i-1] == "so") )
   //
   //
   // }
@@ -452,12 +452,12 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
     // so we look for those separately.
     // TODO FIXME: can we do a search/replace to turn the bigram into a unigram and not have this special case?
     //             I considered doing it earlier but we might get tripped up if we do it before converting to lower case.
-    if ((text_split[i] == "least") & (i == 0)){
+    if ((text_split[i] == "least") && (i == 0)){
       word_negations[i+3] = 1;
       continue;
     }
-    if ((text_split[i] == "least") & (i > 0)){
-      if ((text_split[i-1] != "at") & (text_split[i-1] != "very")){
+    if ((text_split[i] == "least") && (i > 0)){
+      if ((text_split[i-1] != "at") && (text_split[i-1] != "very")){
         word_negations[i+3] = 1;
         continue;
       }
@@ -494,11 +494,11 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
   // FIRST find if there is a caps difference
   // look for two adjacent lowercase, then two adjacent uppercase, if we find both then there is a caps difference
   for (long long unsigned int i = 1; i < text.length(); ++i){
-    if ((text[i] == std::tolower(text[i])) & (text[i-1] == std::tolower(text[i-1]))) two_lowercase = 1;
+    if ((text[i] == std::tolower(text[i])) && (text[i-1] == std::tolower(text[i-1]))) two_lowercase = 1;
 
-    if ((text[i] == std::toupper(text[i])) & (text[i-1] == std::toupper(text[i-1]))) two_uppercase = 1;
+    if ((text[i] == std::toupper(text[i])) && (text[i-1] == std::toupper(text[i-1]))) two_uppercase = 1;
 
-    if (two_lowercase & two_uppercase){
+    if (two_lowercase && two_uppercase){
       caps_diff = 1;
       break;
     }
@@ -509,7 +509,7 @@ NumericVector vadercpp(std::string text, CharacterVector mod_bigrams, CharacterV
   if (caps_diff == 1){
     for (int i = 0; i < text_split_len; ++i){
       for (int j = 1; j < text_split_orig[i].size(); ++j){
-        if ((text_split_orig[i][j] == std::toupper(text_split[i][j])) & (text_split_orig[i][j-1] == std::toupper(text_split[i][j-1])) ){
+        if ((text_split_orig[i][j] == std::toupper(text_split[i][j])) && (text_split_orig[i][j-1] == std::toupper(text_split[i][j-1])) ){
           word_caps[i+3] = 1;
 
         }
